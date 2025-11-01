@@ -1,8 +1,8 @@
-<<<<<<< HEAD
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/login";
 import Register from "./pages/register";
+import Dashboard from "./pages/dashboard"; 
 
 function App() {
   return (
@@ -10,21 +10,9 @@ function App() {
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/dashboard" element={<Dashboard />} />
     </Routes>
   );
-=======
-
-import './App.css'
-
-function App() {
-  
-
-  return (
-    <>
-     
-    </>
-  )
->>>>>>> backup
 }
 
 export default App;

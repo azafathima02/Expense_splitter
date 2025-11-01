@@ -1,15 +1,37 @@
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faLock } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
+
+  // Two allowed logins (email + password). Change these values if you want.
+  const validUsers = [
+    { email: "gopika@gmail.com", password: "1234" },
+    { email: "aza@gmail.com", password: "1234" },
+  ];
 
   const handleLogin = (e) => {
     e.preventDefault();
-    alert(`Login attempted by: ${email}`);
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const matched = validUsers.find(
+      (u) => u.email.toLowerCase() === normalizedEmail && u.password === password
+    );
+
+    if (matched) {
+      // Successful: redirect to dashboard
+      // Optionally you can set some auth flag in localStorage/sessionStorage here.
+      // localStorage.setItem('isAuthenticated', 'true');
+      navigate("/dashboard");
+    } else {
+      // Invalid credentials
+      alert("Invalid email or password. Please try again.");
+      setPassword(""); // clear password field for safety
+    }
   };
 
   return (
@@ -62,8 +84,6 @@ export default function Login() {
             Sign In
           </button>
         </form>
-
-       
 
         <p className="text-center mt-6 text-gray-400 text-sm">
           Don’t have an account?{" "}
