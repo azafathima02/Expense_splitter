@@ -12,6 +12,8 @@ export default function Login() {
   const validUsers = [
     { email: "gopika@gmail.com", password: "1234" },
     { email: "aza@gmail.com", password: "1234" },
+    {email: "sree@gmail.com", password:"1234"},
+    {email:"amegh@gmail.com",password:"1234"},
   ];
 
   const handleLogin = (e) => {
