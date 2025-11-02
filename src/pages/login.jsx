@@ -9,19 +9,42 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
+  // Two allowed logins (email + password). Change these values if you want.
+  const validUsers = [
+    { email: "gopika@gmail.com", password: "1234" },
+    { email: "aza@gmail.com", password: "1234" },
+    { email: "sree@gmail.com", password: "1234" },
+    { email: "amegh@gmail.com", password: "1234" },
+  ];
+
+  // ❌ Fix: add `async` before the function
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       const { data: users } = await getUsersAPI();
+
       const foundUser = users.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+        (u) =>
+          u.email.toLowerCase() === email.toLowerCase() &&
+          u.password === password
       );
 
       if (foundUser) {
-        alert(`Welcome back, ${foundUser.name}!`);
+        alert(`Welcome back, ${foundUser.name || "User"}!`);
         navigate("/dashboard");
       } else {
-        alert("Invalid email or password!");
+        // If API doesn’t find user, check local fallback validUsers
+        const localUser = validUsers.find(
+          (u) =>
+            u.email.toLowerCase() === email.toLowerCase() &&
+            u.password === password
+        );
+        if (localUser) {
+          alert(`Welcome back, ${localUser.email}!`);
+          navigate("/dashboard");
+        } else {
+          alert("Invalid email or password!");
+        }
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -35,11 +58,16 @@ export default function Login() {
       <div className="absolute w-[400px] h-[400px] bg-yellow-400/20 rounded-full blur-3xl bottom-20 right-10 animate-floatReverse"></div>
 
       <div className="relative z-10 w-[400px] p-10 bg-gradient-to-b from-[#1a1a1a]/80 to-black/60 backdrop-blur-2xl border border-yellow-500/20 rounded-2xl shadow-[0_0_25px_rgba(255,215,0,0.15)] animate-fadeInUp">
-        <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">Welcome Back</h1>
+        <h1 className="text-4xl font-bold text-center mb-8 text-yellow-400">
+          Welcome Back
+        </h1>
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="relative">
-            <FontAwesomeIcon icon={faUser} className="absolute left-3 top-3 text-yellow-400" />
+            <FontAwesomeIcon
+              icon={faUser}
+              className="absolute left-3 top-3 text-yellow-400"
+            />
             <input
               type="email"
               placeholder="Email address"
@@ -51,7 +79,10 @@ export default function Login() {
           </div>
 
           <div className="relative">
-            <FontAwesomeIcon icon={faLock} className="absolute left-3 top-3 text-yellow-400" />
+            <FontAwesomeIcon
+              icon={faLock}
+              className="absolute left-3 top-3 text-yellow-400"
+            />
             <input
               type="password"
               placeholder="Password"
@@ -72,7 +103,10 @@ export default function Login() {
 
         <p className="text-center mt-6 text-gray-400 text-sm">
           Don’t have an account?{" "}
-          <Link to="/register" className="text-yellow-400 hover:text-yellow-300 font-medium transition duration-200">
+          <Link
+            to="/register"
+            className="text-yellow-400 hover:text-yellow-300 font-medium transition duration-200"
+          >
             Register here
           </Link>
         </p>
