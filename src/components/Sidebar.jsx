@@ -1,4 +1,3 @@
-// src/components/Sidebar.jsx
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -15,13 +14,19 @@ const navItems = [
   { name: "Expenses", path: "/expenses", icon: faWallet },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isSidebarOpen, toggleSidebar }) => {
   const navigate = useNavigate();
+
   const handleLogout = () => {
     navigate("/login");
   };
+
   return (
-    <div className="hidden md:flex sticky top-0 flex-col w-64 bg-gray-800 border-r border-gray-700 p-4 shadow-2xl h-screen">
+    <div
+      className={`md:flex flex-col w-64 bg-gray-800 border-r border-gray-700 p-4 shadow-2xl h-screen sticky top-0 z-20 ${
+        isSidebarOpen ? "block" : "hidden"
+      }`}
+    >
       <div className="py-4 text-center text-2xl font-extrabold text-amber-400 border-b border-gray-700">
         SplitSmart
       </div>
