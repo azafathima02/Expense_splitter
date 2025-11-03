@@ -9,7 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 const navItems = [
-  { name: "Dashboard", path: "/", icon: faHouse },
+  { name: "Dashboard", path: "/dashboard", icon: faHouse },
   { name: "Groups", path: "/groups", icon: faUsers },
   { name: "Expenses", path: "/expenses", icon: faWallet },
 ];
