@@ -6,6 +6,7 @@ const Groups = () => {
   const [groups, setGroups] = useState([]);
   const [groupName, setGroupName] = useState("");
   const [groupDesc, setGroupDesc] = useState("");
+  const [groupBudget, setGroupBudget] = useState("");
   const [members, setMembers] = useState("");
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ const Groups = () => {
   // ✅ Add a new group
   const handleAddGroup = async (e) => {
     e.preventDefault();
-    if (!groupName.trim() || !groupDesc.trim()) {
+    if (!groupName.trim() || !groupDesc.trim() || !groupBudget.trim()) {
       alert("Please fill all fields");
       return;
     }
@@ -47,8 +48,10 @@ const Groups = () => {
       id: Date.now().toString(),
       name: groupName,
       description: groupDesc,
+      budget: parseFloat(groupBudget),
       members: [user?.name || user?.username || "Unknown", ...memberList],
       createdBy: user?.id || "",
+      expenses: [],
     };
 
     try {
@@ -62,6 +65,7 @@ const Groups = () => {
         setGroups([...groups, newGroup]);
         setGroupName("");
         setGroupDesc("");
+        setGroupBudget("");
         setMembers("");
       }
     } catch (error) {
@@ -101,6 +105,13 @@ const Groups = () => {
           className="w-full p-2 mb-2 rounded bg-[#0A0A0A] text-white"
         />
         <input
+          type="number"
+          placeholder="Group Budget (₹)"
+          value={groupBudget}
+          onChange={(e) => setGroupBudget(e.target.value)}
+          className="w-full p-2 mb-2 rounded bg-[#0A0A0A] text-white"
+        />
+        <input
           type="text"
           placeholder="Members (comma separated)"
           value={members}
@@ -127,6 +138,9 @@ const Groups = () => {
               <h3 className="text-xl font-bold text-[#FFC300]">{g.name}</h3>
               <p className="text-gray-400">{g.description}</p>
               <p className="text-sm mt-2 text-gray-500">
+                Budget: ₹{g.budget?.toLocaleString() || 0}
+              </p>
+              <p className="text-sm text-gray-500">
                 Members: {g.members?.length || 0}
               </p>
             </div>
