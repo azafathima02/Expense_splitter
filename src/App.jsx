@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/login";
 import Register from "./pages/register";
@@ -9,6 +9,11 @@ import Header from "./components/Header";
 import MyGroup from "./pages/MyGroups";
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
   return (
     <>
       <Header />
