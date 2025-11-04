@@ -30,8 +30,9 @@ export default function Login() {
       );
 
       if (foundUser) {
-        alert(`Welcome back, ${foundUser.name || "User"}!`);
-        navigate("/dashboard");
+       alert(`Welcome back, ${foundUser.name || "User"}!`);
+localStorage.setItem("loggedInUser", JSON.stringify(foundUser)); // ✅ save user info
+navigate("/dashboard");
       } else {
         // If API doesn’t find user, check local fallback validUsers
         const localUser = validUsers.find(

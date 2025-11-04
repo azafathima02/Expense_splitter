@@ -1,6 +1,5 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-
 import {
   BarChart,
   Bar,
@@ -18,62 +17,12 @@ import {
   FaUsers,
   FaWallet,
   FaLayerGroup,
-  FaChartPie,
-  FaCreditCard,
   FaChartLine,
+  FaCreditCard,
 } from "react-icons/fa";
+import { getExpensesAPI } from "../services/allAPI"; // ✅ using your backend API
 
-// MOCK DATA
-
-const CURRENT_USER = "john";
-
-const GROUP_MOCK_EXPENSES = [
-  {
-    groupId: "G1",
-    groupName: "Trip to Goa",
-    payer: "john",
-    amount: 600,
-    description: "Toll fee",
-    members: ["john", "max", "kunal"],
-    category: "Travel",
-  },
-  {
-    groupId: "G1",
-    groupName: "Trip to Goa",
-    payer: "max",
-    amount: 1000,
-    description: "Dinner",
-    members: ["john", "max"],
-    category: "Food",
-  },
-
-  {
-    groupId: "G2",
-    groupName: "Apartment",
-    payer: "john",
-    amount: 3000,
-    description: "Rent",
-    members: ["john", "kunal"],
-    category: "Housing",
-  },
-
-  {
-    groupId: "G3",
-    groupName: "Farewell Party",
-    payer: "kunal",
-    amount: 2500,
-    description: "Cake",
-    members: ["john", "kunal", "max", "shweta"],
-    category: "Food",
-  },
-];
-
-const MOCK_BUDGETS = {
-  groupBudget: 7000,
-};
-
-//  DATA TRANSFORMATION LOGIC (Group-Only Focus)
-
+// Helper function to calculate summary
 const calculateUserSummary = (expenses, currentUser, budgets) => {
   let netBalance = 0;
   let totalGroupSpent = 0;
@@ -82,8 +31,8 @@ const calculateUserSummary = (expenses, currentUser, budgets) => {
   const groups = new Set();
 
   expenses.forEach((expense) => {
-    const isGroupExpense = expense.members.length > 1;
-    const isMember = expense.members.includes(currentUser);
+    const isGroupExpense = expense.members && expense.members.length > 1;
+    const isMember = expense.members?.includes(currentUser);
 
     if (!isGroupExpense || !isMember) return;
 
@@ -91,22 +40,22 @@ const calculateUserSummary = (expenses, currentUser, budgets) => {
     const share = amount / expense.members.length;
     const category = expense.category || "Other";
 
-    //  Accumulate Totals
+    //  Totals
     groups.add(expense.groupName);
     totalGroupSpent += share;
 
-    //  Net Balance Calculation
+    //  Net Balance
     if (expense.payer === currentUser) {
       netBalance += amount - share;
     } else {
       netBalance -= share;
     }
 
-    // Group Breakdown Map for Bar Chart
+    // Group breakdown
     const groupName = expense.groupName;
     groupSpendingMap[groupName] = (groupSpendingMap[groupName] || 0) + share;
 
-    // Category Breakdown Map for Pie Chart
+    // Category breakdown
     categoryMap[category] = (categoryMap[category] || 0) + share;
   });
 
@@ -132,14 +81,51 @@ const calculateUserSummary = (expenses, currentUser, budgets) => {
   };
 };
 
-//  DASHBOARD COMPONENT
-
 const Dashboard = () => {
-  const summary = useMemo(
-    () => calculateUserSummary(GROUP_MOCK_EXPENSES, CURRENT_USER, MOCK_BUDGETS),
-    []
-  );
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  const CURRENT_USER = "john"; // ✅ Replace with login user later
+  const MOCK_BUDGETS = { groupBudget: 7000 };
+
+  // Fetch expenses from backend
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        const response = await getExpensesAPI();
+        setExpenses(response.data);
+      } catch (error) {
+        console.error("Error fetching expenses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExpenses();
+  }, []);
+
+  const summary = useMemo(() => {
+    if (expenses.length === 0)
+      return {
+        netBalance: 0,
+        totalGroupSpent: 0,
+        totalGroups: 0,
+        groupRemaining: 0,
+        groupBreakdownData: [],
+        categoryData: [],
+      };
+    return calculateUserSummary(expenses, CURRENT_USER, MOCK_BUDGETS);
+  }, [expenses]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-900 text-yellow-400 text-xl">
+        Loading Dashboard Data...
+      </div>
+    );
+  }
+
+  // Cards
   const cards = [
     {
       title: "Net Balance",
@@ -170,25 +156,22 @@ const Dashboard = () => {
     },
   ];
 
-  // Colors for the Pie Chart categories
   const PIE_COLORS = ["#facc15", "#34d399", "#6366f1", "#fb7185", "#38bdf8"];
 
-  // Placeholder for router navigation
   const handleGroupClick = (data) => {
-    console.log(`Navigating to group detail page for: ${data.name}`);
-    alert(`Navigating to the transaction list for the group: ${data.name}`);
+    alert(`Navigating to the transaction list for group: ${data.name}`);
   };
 
   return (
     <div className="min-h-screen bg-gray-900 p-6 md:p-10 text-white">
-      <h1 className="text-3xl font-extrabold text-yellow-400 mb-2">
+      <h1 className="text-3xl font-extrabold text-yellow-400 mb-2 pb-1 py-9">
         Group Tracker Dashboard
       </h1>
       <p className="text-lg text-gray-400 mb-8">
-        Your financial summary based purely on shared group expenses.
+        Your financial summary based on shared group expenses.
       </p>
 
-      {/* --- Summary Cards --- */}
+      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {cards.map((card, i) => (
           <motion.div
@@ -200,7 +183,7 @@ const Dashboard = () => {
               scale: 1.03,
               boxShadow: "0 10px 15px -3px rgba(251, 191, 36, 0.3)",
             }}
-            className={`p-6 rounded-xl shadow-xl text-white bg-gradient-to-br ${card.color} flex flex-col justify-between h-full cursor-pointer transition-all duration-300 transform`}
+            className={`p-6 rounded-xl shadow-xl bg-gradient-to-br ${card.color} flex flex-col justify-between h-full cursor-pointer transition-all duration-300 transform`}
           >
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-sm font-medium opacity-80">{card.title}</h3>
@@ -212,9 +195,9 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* --- Charts Section --- */}
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-10">
-        {/* PIE CHART: Category Breakdown  */}
+        {/* Pie Chart */}
         <div className="lg:col-span-1 bg-gray-800 p-6 rounded-xl shadow-2xl border border-yellow-500/20">
           <h2 className="text-xl font-semibold mb-6 text-yellow-300">
             <FaChartLine className="inline mr-2" /> Spending by Category
@@ -240,10 +223,7 @@ const Dashboard = () => {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value) => [
-                  `₹${value.toLocaleString("en-IN")}`,
-                  "Share",
-                ]}
+                formatter={(value) => [`₹${value.toLocaleString("en-IN")}`, "Share"]}
                 contentStyle={{
                   backgroundColor: "#1F2937",
                   border: "1px solid #4B5563",
@@ -261,7 +241,7 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* BAR CHART: Group Spending Breakdown */}
+        {/* Bar Chart */}
         <div className="lg:col-span-2 bg-gray-800 p-6 rounded-xl shadow-2xl border border-yellow-500/20">
           <h2 className="text-xl font-semibold mb-4 text-yellow-300">
             <FaCreditCard className="inline mr-2" /> Group Spending Breakdown
@@ -274,18 +254,11 @@ const Dashboard = () => {
               data={summary.groupBreakdownData}
               margin={{ top: 10, right: 10, bottom: 0, left: -20 }}
             >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#4B5563"
-                vertical={false}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="#4B5563" vertical={false} />
               <XAxis dataKey="name" stroke="#9CA3AF" />
               <YAxis stroke="#9CA3AF" />
               <Tooltip
-                formatter={(value) => [
-                  `₹${value.toLocaleString("en-IN")}`,
-                  "Your Share",
-                ]}
+                formatter={(value) => [`₹${value.toLocaleString("en-IN")}`, "Your Share"]}
                 contentStyle={{
                   backgroundColor: "#1F2937",
                   border: "1px solid #4B5563",

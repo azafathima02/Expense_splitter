@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faEnvelope, faLock } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUserAPI, getUsersAPI } from "../services/allAPI";
+import { addUserAPI, getUsersAPI } from "../services/allAPI";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -31,8 +31,8 @@ export default function Register() {
       }
 
       // Register new user
-      const newUser = { id: Date.now(), name, email, password };
-      await registerUserAPI(newUser);
+      const newUser = { id: Date.now().toString(), name, email, password };
+      await addUserAPI(newUser);
       alert("Account created successfully!");
       navigate("/login");
     } catch (err) {

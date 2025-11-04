@@ -1,109 +1,207 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Send, Plus } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import ExpenseMessageCard from "../components/ExpenseMessageCard"; // 👈 your updated card
 
 const MyGroup = () => {
-  const [showDetails, setShowDetails] = useState(false);
+  const { id } = useParams(); // group id from URL
+  const navigate = useNavigate();
+  const [group, setGroup] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const messagesEndRef = useRef(null);
+  const [users, setUsers] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState(null); // 👈 for modal handling
 
-  const group = {
-    name: "Trip to Goa",
-    description: "Expense sharing group for our Goa trip!",
-    members: ["Sree", "Ananya", "Rahul", "Vikram"],
+  const loggedUser = JSON.parse(localStorage.getItem("loggedInUser"));
+
+  const handleAddExpense = () => {
+    navigate(`/mygroup/${id}/addexpense`);
   };
 
-  // Scroll to bottom when messages update
+  // Fetch group details, users, and messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const fetchData = async () => {
+      const [groupRes, msgRes, userRes] = await Promise.all([
+        fetch(`http://localhost:5001/groups/${id}`),
+        fetch(`http://localhost:5001/messages?groupId=${id}`),
+        fetch(`http://localhost:5001/users`),
+      ]);
 
-  const handleSend = () => {
-    if (input.trim()) {
-      setMessages([...messages, { text: input, sender: "You" }]);
-      setInput("");
-    }
+      const groupData = await groupRes.json();
+      const msgData = await msgRes.json();
+      const userData = await userRes.json();
+
+      setGroup(groupData);
+      setMessages(msgData);
+      setUsers(userData);
+    };
+
+    fetchData();
+  }, [id]);
+
+  // Send new message
+  const handleSend = async () => {
+    if (!newMessage.trim()) return;
+
+    const msg = {
+      groupId: Number(id),
+      sender: loggedUser.name,
+      text: newMessage,
+      timestamp: new Date().toISOString(),
+    };
+
+    await fetch(`http://localhost:5001/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(msg),
+    });
+
+    setMessages([...messages, msg]);
+    setNewMessage("");
+  };
+
+  if (!group || !loggedUser) return <p>Loading...</p>;
+
+  // Filter members of the group
+  const groupMembers = users.filter((u) => group.members.includes(Number(u.id)));
+
+  // Separate normal messages and expense messages
+  const normalMessages = messages.filter((msg) => !msg.isExpense);
+  const expenseMessages = messages.filter((msg) => msg.isExpense);
+
+  // Handle expense modal open
+  const handleOpenModal = (expense) => {
+    setSelectedExpense(expense);
+  };
+
+  // Handle expense modal close
+  const handleCloseModal = () => {
+    setSelectedExpense(null);
   };
 
   return (
-    <div className="bg-[#0A0A0A] min-h-screen text-white flex flex-col pt-[70px]">
-      {/* Group name bar */}
-      <div
-        className="bg-[#1C1C1C] px-6 py-4 cursor-pointer flex justify-between items-center shadow-md"
-        onClick={() => setShowDetails(!showDetails)}
-      >
-        <h2 className="text-lg font-semibold">{group.name}</h2>
-        <span className="text-[#FFC300] text-sm">
-          {showDetails ? "▲ Hide Info" : "▼ View Info"}
-        </span>
-      </div>
+    <div className="min-h-screen bg-[#0A0A0A] text-white p-4">
+      {/* Header */}
+      <header className="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+        <h2 className="text-xl font-semibold">Expense Splitter</h2>
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="bg-[#FFC300] text-black px-4 py-1 rounded-lg font-semibold"
+        >
+          Back
+        </button>
+      </header>
 
-      {/* Drop-down for description and members */}
-      {showDetails && (
-        <div className="bg-[#1C1C1C] border-b border-[#E0E0E0]/20 px-6 py-3">
-          <p className="text-[#E0E0E0] mb-2 text-sm">
-            <span className="font-semibold text-white">Description: </span>
-            {group.description}
-          </p>
-          <p className="text-[#E0E0E0] text-sm">
-            <span className="font-semibold text-white">Members: </span>
-            {group.members.join(", ")}
-          </p>
+      {/* Navbar below header */}
+      <nav className="flex justify-between items-center mb-4">
+        <div>
+          <button
+            className="text-lg font-semibold hover:underline"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {group.name} ⬇
+          </button>
+          {showDetails && (
+            <div className="bg-gray-900 border border-gray-700 mt-2 p-3 rounded-xl w-64">
+              <p className="text-sm text-gray-300 mb-2">{group.description}</p>
+              <h4 className="font-semibold mb-1">Members:</h4>
+              <ul className="list-disc ml-5">
+                {groupMembers.map((m) => (
+                  <li key={m.id}>{m.name}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
-      )}
+      </nav>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
-        {messages.length === 0 ? (
-          <p className="text-center text-[#E0E0E0]/50 mt-10">
-            No messages yet. Start a chat below!
-          </p>
+      {/* Chat Box */}
+      <div className="bg-gray-900 p-4 rounded-xl h-[50vh] overflow-y-auto mb-4 shadow-lg">
+        {normalMessages.length === 0 ? (
+          <p className="text-gray-400">No messages yet...</p>
         ) : (
-          messages.map((msg, index) => (
+          normalMessages.map((msg) => (
             <div
-              key={index}
-              className={`flex ${
-                msg.sender === "You" ? "justify-end" : "justify-start"
+              key={msg.id}
+              className={`mb-3 p-2 rounded-lg max-w-xs ${
+                msg.sender === loggedUser.name
+                  ? "ml-auto bg-[#FFC300] text-black"
+                  : "bg-gray-800 text-white"
               }`}
             >
-              <div
-                className={`max-w-xs px-4 py-2 rounded-2xl ${
-                  msg.sender === "You"
-                    ? "bg-[#FFC300] text-black"
-                    : "bg-[#1C1C1C] text-white"
-                }`}
-              >
-                {msg.text}
-              </div>
+              <p className="text-sm font-semibold">{msg.sender}</p>
+              <p>{msg.text}</p>
+              <p className="text-xs text-gray-400">
+                {new Date(msg.timestamp).toLocaleTimeString()}
+              </p>
             </div>
           ))
         )}
-        <div ref={messagesEndRef} />
       </div>
 
+      {/* 💰 Expense Messages Section */}
+      {expenseMessages.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2 text-[#FFC300]">Expenses</h3>
+          <div className="flex flex-col gap-2">
+            {expenseMessages.map((expense) => (
+              <ExpenseMessageCard
+                key={expense.id}
+                expense={expense}
+                onOpenModal={handleOpenModal}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Message Input */}
-      <div className="flex items-center p-4 bg-[#1C1C1C] border-t border-[#E0E0E0]/10">
+      <div className="flex items-center gap-2">
         <input
           type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1 bg-transparent outline-none border border-[#E0E0E0]/20 rounded-full px-4 py-2 text-sm text-white"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          className="flex-1 p-2 bg-gray-800 text-white rounded-lg outline-none"
         />
         <button
           onClick={handleSend}
-          className="ml-3 text-[#FFC300] hover:text-white transition"
+          className="bg-[#FFC300] text-black px-3 py-2 rounded-lg font-semibold"
         >
-          <Send size={22} />
+          ➤
         </button>
         <button
-          onClick={() => (window.location.href = "/expenses")}
-          className="ml-3 text-[#FFC300] hover:text-white transition"
+          onClick={handleAddExpense}
+          className="bg-yellow-400 text-black px-4 py-2 rounded-lg shadow hover:bg-yellow-300 transition-all"
         >
-          <Plus size={22} />
+          ➕ Add Expense
         </button>
       </div>
+
+      {/* Expense Details Modal */}
+      {selectedExpense && (
+        <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
+          <div className="bg-gray-900 text-white p-6 rounded-xl w-80">
+            <h3 className="text-lg font-semibold mb-3 text-[#FFC300]">
+              Expense Details
+            </h3>
+            <p className="text-sm mb-1">💬 {selectedExpense.description}</p>
+            <p className="text-sm mb-1">💰 Amount: ₹{selectedExpense.amount}</p>
+            <p className="text-sm mb-1">
+              👤 Paid by: {selectedExpense.paidBy}
+            </p>
+            <p className="text-xs text-gray-400">
+              {new Date(selectedExpense.date).toLocaleString()}
+            </p>
+            <button
+              onClick={handleCloseModal}
+              className="mt-4 w-full bg-[#FFC300] text-black py-2 rounded-lg font-semibold"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
